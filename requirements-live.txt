@@ -1,0 +1,7 @@
+-r requirements.txt
+langchain-openai
+numpy
+openai
+faiss-cpu
+tavily-python
+strands-agents
