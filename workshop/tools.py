@@ -1,4 +1,5 @@
 """Strands specialists and bounded, allowlisted IT support tools."""
+from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
 
@@ -12,6 +13,64 @@ KB = {
     "vpn-guide": ("vpn mạng", "Hãy kết nối lại VPN rồi thử lại. Nếu vẫn lỗi, hãy tạo phiếu hỗ trợ."),
     "password-guide": ("mật khẩu password reset", "Hãy dùng cổng tự đặt lại mật khẩu. Không chia sẻ mật khẩu của bạn."),
 }
+POLICY_PDF = (Path(__file__).resolve().parents[1] / "data" / "policies" /
+              "Information_Technology_Procedure_-_Passwords.pdf")
+PDF_MAX_BYTES = 8 * 1024 * 1024
+PDF_MAX_PAGES = 30
+POLICY_CHUNK_CHARS = 900
+POLICY_CHUNK_OVERLAP = 120
+
+
+def chunk_policy_page(text, *, page_number, max_chars=POLICY_CHUNK_CHARS,
+                      overlap=POLICY_CHUNK_OVERLAP):
+    """Split one extracted PDF page into bounded, overlapping, citable chunks."""
+    if max_chars < 1 or overlap < 0 or overlap >= max_chars:
+        raise ValueError("Chunk size must be positive and overlap smaller than chunk size.")
+    normalized = " ".join(text.split())
+    chunks = []
+    start = 0
+    source = f"Information Technology Procedure - Passwords, page {page_number}"
+    while start < len(normalized):
+        end = min(start + max_chars, len(normalized))
+        if end < len(normalized):
+            boundary = normalized.rfind(" ", start + max_chars // 2, end)
+            if boundary > start:
+                end = boundary
+        content = normalized[start:end].strip()
+        if content:
+            chunks.append({"source": source, "text": content})
+        if end >= len(normalized):
+            break
+        next_start = max(start + 1, end - overlap)
+        while next_start < len(normalized) and normalized[next_start] != " ":
+            next_start += 1
+        start = min(next_start + 1, len(normalized))
+    return chunks
+
+
+def load_policy_pdf(path=POLICY_PDF):
+    """Extract and chunk the local password procedure; fail clearly if absent."""
+    from pypdf import PdfReader
+
+    path = Path(path)
+    if not path.is_file():
+        raise FileNotFoundError("Place the local policy PDF at data/policies/Information_Technology_Procedure_-_Passwords.pdf")
+    if path.stat().st_size > PDF_MAX_BYTES:
+        raise ValueError("Policy PDF exceeds the 8 MiB size limit.")
+    reader = PdfReader(path)
+    if len(reader.pages) > PDF_MAX_PAGES:
+        raise ValueError(f"Policy PDF exceeds the {PDF_MAX_PAGES}-page limit.")
+    chunks = []
+    for page_number, page in enumerate(reader.pages, start=1):
+        page_text = page.extract_text() or ""
+        if len(page_text) > 100_000:
+            raise ValueError(f"Policy PDF page {page_number} exceeds the text limit.")
+        chunks.extend(chunk_policy_page(page_text, page_number=page_number))
+        if len(chunks) > 300:
+            raise ValueError("Policy PDF produces more than 300 chunks.")
+    if not chunks:
+        raise ValueError("Policy PDF contains no extractable text.")
+    return chunks
 
 
 class ProviderUnavailable(Exception):
@@ -59,6 +118,8 @@ class LiveAgents:
         self._embeddings = OpenAIEmbeddings(model=embedding_model, api_key=api_key,
                                            request_timeout=8, max_retries=0)
         self._documents = [(source, answer) for source, (_, answer) in KB.items()]
+        self._documents.extend((chunk["source"], chunk["text"])
+                               for chunk in load_policy_pdf())
         try:
             vectors = np.asarray(self._embeddings.embed_documents(
                 [answer for _, answer in self._documents]), dtype="float32")
@@ -86,14 +147,14 @@ class LiveAgents:
 
         @tool
         def search_policy(query: str) -> str:
-            """Retrieve up to two relevant entries from the internal sample IT policy index."""
+            """Retrieve up to three relevant chunks from the local IT policy index."""
             from openai import OpenAIError
             try:
                 vector = self._np.asarray([self._embeddings.embed_query(query[:200])], dtype="float32")
             except OpenAIError as exc:
                 event("policy_search_failed", reason=type(exc).__name__)
                 raise ProviderUnavailable from None
-            _, matches = self._index.search(vector, k=2)
+            _, matches = self._index.search(vector, k=min(3, len(self._documents)))
             hits = [self._documents[i] for i in matches[0] if i >= 0]
             capture["sources"] = [source for source, _ in hits]
             return "\n".join(f"{source}: {answer}" for source, answer in hits)

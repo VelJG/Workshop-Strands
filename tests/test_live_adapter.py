@@ -11,15 +11,30 @@ from workshop.tools import ProviderUnavailable, RouteDecision, _tavily_hits, liv
 @unittest.skipUnless(all(importlib.util.find_spec(name) for name in ("faiss", "strands", "tavily")),
                      "install requirements-live.txt for the live adapter test")
 class LiveAdapterTest(unittest.TestCase):
+    def setUp(self):
+        loader = patch("workshop.tools.load_policy_pdf", return_value=[
+            {"source": "Information Technology Procedure - Passwords, page 1",
+             "text": "Password rules from PDF"},
+        ])
+        loader.start()
+        self.addCleanup(loader.stop)
+
+    @staticmethod
+    def _embed_documents(texts):
+        return [[1.0, 0.0] if index % 2 == 0 else [0.0, 1.0]
+                for index, _ in enumerate(texts)]
+
     @patch("langchain_openai.OpenAIEmbeddings")
     def test_builds_a_real_strands_graph_with_three_specialists(self, embedding_type):
-        embedding_type.return_value.embed_documents.return_value = [[1, 0], [0, 1], [-1, 0]]
+        embedding_type.return_value.embed_documents.side_effect = self._embed_documents
         agents = live_agents(chat_model="test-chat", embedding_model="test-embed", api_key="test-key",
                              tavily_key="test-tavily-key")
         graph = agents.build_graph()
         self.assertEqual(set(graph.nodes), {"router", "qa", "ticket", "research"})
         self.assertEqual(len(graph.edges), 3)
         self.assertEqual(graph.nodes["router"].executor.__class__.__name__, "Agent")
+        embedded = embedding_type.return_value.embed_documents.call_args.args[0]
+        self.assertIn("Password rules from PDF", embedded)
 
     def test_tavily_results_are_bounded_and_only_https(self):
         hits = _tavily_hits({"results": [
@@ -33,7 +48,7 @@ class LiveAdapterTest(unittest.TestCase):
     @patch("langchain_openai.OpenAIEmbeddings")
     def test_strands_graph_result_preserves_ticket_approval_boundary(self, embedding_type):
         from strands.multiagent.base import Status
-        embedding_type.return_value.embed_documents.return_value = [[1, 0], [0, 1], [-1, 0]]
+        embedding_type.return_value.embed_documents.side_effect = self._embed_documents
         agents = live_agents(chat_model="test-chat", embedding_model="test-embed", api_key="test-key",
                              tavily_key="test-tavily-key")
 
@@ -60,7 +75,7 @@ class LiveAdapterTest(unittest.TestCase):
     @patch("langchain_openai.OpenAIEmbeddings")
     def test_missing_tool_result_fails_closed(self, embedding_type):
         from strands.multiagent.base import Status
-        embedding_type.return_value.embed_documents.return_value = [[1, 0], [0, 1], [-1, 0]]
+        embedding_type.return_value.embed_documents.side_effect = self._embed_documents
         agents = live_agents(chat_model="test-chat", embedding_model="test-embed", api_key="test-key",
                              tavily_key="test-tavily-key")
         result = SimpleNamespace(status=Status.COMPLETED, results={

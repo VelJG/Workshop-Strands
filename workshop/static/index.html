@@ -3,86 +3,98 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
+  <meta name="color-scheme" content="dark">
   <link rel="icon" href="data:,">
-  <title>Workshop Strands · Trợ lý AI hỗ trợ</title>
+  <title>Cổng hỗ trợ CNTT</title>
   <style>
-    :root { font-family: Inter, "Segoe UI", system-ui, sans-serif; color: #1b2838; background: #f3f6fa; }
+    :root { color-scheme: dark; font-family: "Segoe UI", Inter, system-ui, sans-serif; color: #edf2fb; background: #05071d; }
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 88% 4%, rgba(83, 10, 147, .46), transparent 42%), radial-gradient(ellipse at 85% 92%, rgba(20, 39, 177, .42), transparent 44%), linear-gradient(125deg, #05071d 5%, #080b2a 58%, #10104a 100%); background-attachment: fixed; }
     button, textarea { font: inherit; }
     button { cursor: pointer; }
     button:disabled { cursor: not-allowed; opacity: .55; }
-    button:focus-visible, textarea:focus-visible { outline: 3px solid #2267d6; outline-offset: 2px; }
-    .shell { max-width: 1020px; margin: 0 auto; padding: 28px 20px 40px; }
-    header { display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-bottom: 22px; }
-    .eyebrow { color: #3561a4; font-size: .75rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-    h1 { font-size: clamp(1.55rem, 4vw, 2.4rem); margin: 6px 0; letter-spacing: -.04em; }
-    .intro { margin: 0; color: #526176; max-width: 62ch; line-height: 1.5; }
-    .badge { flex: 0 0 auto; border: 1px solid #c8d6e8; background: #fff; color: #33557e; padding: 8px 12px; border-radius: 999px; font-size: .8rem; font-weight: 700; }
-    .grid { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 18px; align-items: start; }
-    .panel { border: 1px solid #d9e2ee; border-radius: 18px; background: #fff; box-shadow: 0 10px 30px rgba(26, 55, 96, .06); }
-    .conversation { min-height: 410px; max-height: 58vh; overflow: auto; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
-    .bubble { max-width: 88%; padding: 13px 16px; border-radius: 16px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
-    .assistant { background: #edf3fc; align-self: flex-start; border-bottom-left-radius: 4px; }
-    .user { background: #1d4c97; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
-    .meta { font-size: .76rem; font-weight: 700; opacity: .75; display: block; margin-bottom: 4px; }
-    .source { display: block; font-size: .8rem; color: #385c8b; margin-top: 8px; }
-    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-    .actions button, .send { border: 0; border-radius: 10px; background: #1d4c97; color: #fff; padding: 9px 15px; font-weight: 700; }
-    .actions .secondary { background: #e4e9f1; color: #20354f; }
-    form { border-top: 1px solid #e3e9f1; padding: 16px; }
-    label { display: block; font-size: .84rem; font-weight: 700; margin-bottom: 8px; }
+    button:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid #a78bfa; outline-offset: 2px; }
+    .shell { max-width: 1180px; margin: 0 auto; padding: 0 28px 48px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 18px; min-height: 82px; border-bottom: 1px solid rgba(180, 196, 224, .16); }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand-mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 11px; background: linear-gradient(145deg, #7056c8, #2f4fa3); color: #fff; font-size: .88rem; font-weight: 800; box-shadow: 0 6px 20px rgba(82, 67, 170, .28); }
+    .brand-name { display: block; font-weight: 750; letter-spacing: -.025em; }
+    .brand-type { display: block; margin-top: 2px; color: #9aa9c5; font-size: .74rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+    .badge { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; border: 1px solid rgba(184, 199, 225, .2); background: rgba(26, 43, 68, .88); color: #dce8f9; padding: 8px 11px; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+    .badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #57d6a0; box-shadow: 0 0 10px rgba(87, 214, 160, .55); }
+    .heading { padding: 36px 0 26px; }
+    .eyebrow { color: #b49aff; font-size: .74rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { font-size: clamp(1.7rem, 3.5vw, 2.45rem); margin: 7px 0 8px; letter-spacing: -.045em; line-height: 1.2; }
+    .intro { margin: 0; color: #b2bfd4; max-width: 68ch; line-height: 1.55; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 18px; align-items: start; }
+    .panel { min-width: 0; border: 1px solid rgba(178, 196, 225, .16); border-radius: 14px; background: rgba(31, 52, 77, .94); box-shadow: 0 18px 50px rgba(0, 0, 0, .24); }
+    .panel-heading { padding: 18px 22px; border-bottom: 1px solid rgba(178, 196, 225, .14); }
+    .panel-heading h2, .services h2 { margin: 0; font-size: .95rem; letter-spacing: -.015em; }
+    .panel-heading p { margin: 4px 0 0; color: #aab9ce; font-size: .78rem; }
+    .conversation { min-height: 410px; max-height: 58vh; overflow: auto; padding: 22px; display: flex; flex-direction: column; gap: 15px; background: rgba(12, 24, 43, .2); }
+    .bubble { max-width: 88%; padding: 12px 15px; border-radius: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .assistant { background: #263f5b; border: 1px solid rgba(200, 215, 237, .1); color: #f0f4fb; align-self: flex-start; border-bottom-left-radius: 4px; }
+    .user { background: #4c3c99; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .meta { font-size: .75rem; font-weight: 750; opacity: .78; display: block; margin-bottom: 4px; }
+    .source { display: block; font-size: .8rem; color: #c1d1e8; margin-top: 9px; }
+    .source a { color: #b8d9ff; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+    .actions button, .send { border: 0; border-radius: 8px; background: #6350b5; color: #fff; padding: 10px 15px; font-weight: 700; }
+    .actions button:hover:not(:disabled), .send:hover:not(:disabled) { background: #7865cc; }
+    .actions .secondary { background: #3b506a; color: #eef3fa; }
+    form { border-top: 1px solid rgba(178, 196, 225, .14); padding: 17px 22px 20px; }
+    label { display: block; font-size: .82rem; font-weight: 700; margin-bottom: 8px; }
     .composer { display: flex; gap: 9px; align-items: end; }
-    textarea { width: 100%; min-height: 64px; resize: vertical; border: 1px solid #b9c8db; border-radius: 11px; padding: 11px 13px; color: #1b2838; }
+    textarea { width: 100%; min-width: 0; min-height: 64px; resize: vertical; border: 1px solid #526983; border-radius: 9px; padding: 11px 13px; color: #f1f5fb; background: #172b43; }
+    textarea::placeholder { color: #a2b1c6; }
     .send { min-height: 44px; }
-    .hint { color: #62728a; font-size: .76rem; margin: 8px 0 0; }
-    aside { padding: 19px; }
-    h2 { font-size: .96rem; margin: 0 0 12px; }
-    .example { width: 100%; text-align: left; border: 1px solid #d3dfef; background: #f7faff; color: #284b78; border-radius: 10px; padding: 11px; margin: 0 0 9px; line-height: 1.4; }
-    .steps { list-style: none; margin: 18px 0 0; padding: 0; border-top: 1px solid #e0e8f2; }
-    .steps li { margin-top: 13px; font-size: .82rem; color: #435976; line-height: 1.4; }
-    .steps strong { color: #1d4c97; }
-    .notice { margin-top: 18px; font-size: .75rem; color: #687891; line-height: 1.5; }
-    @media (max-width: 760px) { .shell { padding: 18px 12px 28px; } header { flex-wrap: wrap; } .grid { grid-template-columns: 1fr; } .conversation { min-height: 320px; max-height: 55vh; padding: 14px; } aside { order: -1; } .bubble { max-width: 95%; } }
+    .hint { color: #a4b3c8; font-size: .75rem; margin: 9px 0 0; }
+    .services { padding: 20px; }
+    .services h2 { margin-bottom: 15px; }
+    .example { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; border: 1px solid rgba(183, 202, 228, .22); background: #293f5c; color: #edf3fc; border-radius: 9px; padding: 13px 12px; margin-bottom: 9px; font-size: .83rem; font-weight: 650; line-height: 1.35; }
+    .example:hover:not(:disabled) { background: #344e70; border-color: #8a7bd2; }
+    .example::after { content: "↗"; color: #c0b4ff; font-size: .95rem; }
+    .notice { border-top: 1px solid rgba(178, 196, 225, .14); margin: 15px 0 0; padding-top: 14px; font-size: .75rem; color: #a9b8cc; line-height: 1.5; }
+    @media (max-width: 760px) { .shell { padding: 0 14px 28px; } .topbar { min-height: 70px; } .brand-mark { width: 36px; height: 36px; } .heading { padding: 27px 0 20px; } .grid { grid-template-columns: 1fr; } .services { order: -1; } .conversation { min-height: 320px; max-height: 54vh; padding: 15px; } .panel-heading, form { padding-left: 15px; padding-right: 15px; } .bubble { max-width: 96%; } }
+    @media (max-width: 480px) { .badge { font-size: 0; padding: 9px; } .badge::before { width: 9px; height: 9px; } .services { padding: 15px; } .services h2 { margin-bottom: 10px; } .example { margin-bottom: 7px; } .composer { flex-direction: column; align-items: stretch; } .send { align-self: flex-end; } }
   </style>
   <script src="/ui.js" defer></script>
 </head>
 <body>
   <main class="shell">
-    <header>
-      <div>
-        <div class="eyebrow">Workshop Strands · Live AI</div>
-        <h1>Trợ lý AI hỗ trợ</h1>
-        <p class="intro">Hỏi về quy trình hỗ trợ, hoặc yêu cầu tạo phiếu. Một đề xuất chỉ trở thành phiếu sau khi bạn phê duyệt.</p>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">IT</span>
+        <div><span class="brand-name">Cổng hỗ trợ CNTT</span><span class="brand-type">Dịch vụ nội bộ</span></div>
       </div>
-      <span id="service-status" class="badge">Đang kiểm tra…</span>
+      <span id="service-status" class="badge" role="status" aria-label="Trạng thái hệ thống">Đang kiểm tra…</span>
     </header>
+    <div class="heading">
+      <div class="eyebrow">Trung tâm hỗ trợ</div>
+      <h1>Trợ lý CNTT nội bộ</h1>
+      <p class="intro">Tra cứu chính sách, gửi yêu cầu hỗ trợ và tìm thông tin liên quan trong một cuộc trò chuyện.</p>
+    </div>
     <div class="grid">
-      <section class="panel" aria-label="Hội thoại">
+      <section class="panel" aria-label="Hội thoại hỗ trợ">
+        <div class="panel-heading"><h2>Hội thoại</h2><p>Đặt câu hỏi hoặc mô tả vấn đề bạn đang gặp phải.</p></div>
         <div id="messages" class="conversation" role="log" aria-live="polite" aria-relevant="additions text">
-          <div class="bubble assistant"><span class="meta">Trợ lý</span>Xin chào! Bạn có thể chọn một câu hỏi mẫu ở bên phải hoặc nhập câu hỏi của mình.</div>
+          <div class="bubble assistant"><span class="meta">Trợ lý CNTT</span>Xin chào! Tôi có thể giúp bạn tra cứu thông tin và tiếp nhận yêu cầu hỗ trợ.</div>
         </div>
         <form id="chat-form">
-          <label for="message">Tin nhắn của bạn</label>
+          <label for="message">Nội dung trao đổi</label>
           <div class="composer">
-            <textarea id="message" name="message" maxlength="1500" required placeholder="Ví dụ: Phiếu hỗ trợ mới có trạng thái gì?"></textarea>
+            <textarea id="message" name="message" maxlength="1500" required placeholder="Nhập câu hỏi hoặc mô tả vấn đề của bạn…"></textarea>
             <button id="send" class="send" type="submit">Gửi</button>
           </div>
-          <p class="hint">Enter để gửi; Shift+Enter để xuống dòng. Chỉ dùng dữ liệu giả lập.</p>
+          <p class="hint">Enter để gửi · Shift+Enter để xuống dòng</p>
         </form>
       </section>
-      <aside class="panel" aria-label="Hướng dẫn demo">
-        <h2>Thử ngay</h2>
-        <button class="example" type="button" data-message="Phiếu hỗ trợ mới có trạng thái gì?">1. Hỏi về trạng thái phiếu</button>
-        <button class="example" type="button" data-message="Tạo phiếu hỗ trợ cho lỗi đăng nhập VPN">2. Đề xuất tạo phiếu VPN</button>
-        <button class="example" type="button" data-message="Tìm trên web hướng dẫn bảo mật VPN mới nhất và dẫn nguồn">3. Research web về VPN</button>
-        <ol class="steps">
-          <li><strong>Tra cứu:</strong> xem câu trả lời và nguồn tri thức.</li>
-          <li><strong>Đề xuất:</strong> chưa ghi dữ liệu khi chưa duyệt.</li>
-          <li><strong>Phê duyệt:</strong> phiếu được tạo một lần, trạng thái Pending.</li>
-        </ol>
-        <p class="notice">Câu trả lời được tạo bởi mô hình AI thật và có thể thay đổi giữa các lượt. Chỉ dùng dữ liệu giả lập; hội thoại trên màn hình không được lưu làm bộ nhớ hội thoại.</p>
+      <aside class="panel services" aria-label="Dịch vụ hỗ trợ">
+        <h2>Dịch vụ hỗ trợ</h2>
+        <button class="example" type="button" data-message="Phiếu hỗ trợ mới có trạng thái gì?">Tra cứu chính sách</button>
+        <button class="example" type="button" data-message="Tạo phiếu hỗ trợ cho lỗi đăng nhập VPN">Tạo yêu cầu hỗ trợ</button>
+        <button class="example" type="button" data-message="Tìm trên web hướng dẫn bảo mật VPN mới nhất và dẫn nguồn">Tìm kiếm web</button>
+        <p class="notice">Thông tin do AI tổng hợp có thể cần được kiểm tra trước khi sử dụng.</p>
       </aside>
     </div>
   </main>

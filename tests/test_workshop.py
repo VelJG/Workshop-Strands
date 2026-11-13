@@ -73,14 +73,14 @@ class WorkshopTest(unittest.TestCase):
             page = client.get("/")
             self.assertEqual(page.status_code, 200)
             self.assertIn("text/html", page.headers["content-type"])
-            self.assertIn("Trợ lý AI hỗ trợ", page.text)
+            self.assertIn("Trợ lý CNTT nội bộ", page.text)
             self.assertIn('src="/ui.js"', page.text)
             script = client.get("/ui.js")
             self.assertEqual(script.status_code, 200)
             source = script.content.decode("utf-8")
             self.assertIn('post("/chat"', source)
             self.assertIn('/approvals/', source)
-            self.assertIn("AI thật · local", source)
+            self.assertIn("Hệ thống sẵn sàng", source)
             self.assertNotIn("Chế độ diễn tập", source)
 
     def test_hosted_mode_does_not_expose_local_chat_page(self):

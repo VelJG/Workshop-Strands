@@ -2,7 +2,7 @@
 
 **Đại học FPT · AI trong doanh nghiệp: Vượt ra ngoài mô hình**
 
-Ứng dụng chạy **một chế độ AI thật** với **Strands Agents SDK**: một router và ba specialist agents trong Strands Graph. **Q&A** gọi `search_policy` để tra embeddings/FAISS; **Ticket** gọi `draft_ticket` nhưng chỉ ghi SQLite sau khi người dùng phê duyệt; **Research** dùng vòng agent–tool của Strands để gọi `search_web` qua Tavily rồi tổng hợp câu trả lời có nguồn. Cần OpenAI API key, Tavily API key, internet và ngân sách API; Tavily Search tiêu thụ credits. Chỉ dùng dữ liệu giả lập; câu hỏi và kho tri thức được gửi tới nhà cung cấp model, truy vấn Research còn được gửi tới Tavily.
+Ứng dụng chạy **một chế độ AI thật** với **Strands Agents SDK**: một router và ba specialist agents trong Strands Graph. **Q&A** gọi `search_policy` để tra embeddings/FAISS từ các ghi chú mẫu và PDF quy trình mật khẩu; **Ticket** gọi `draft_ticket` nhưng chỉ ghi SQLite sau khi người dùng phê duyệt; **Research** dùng vòng agent–tool của Strands để gọi `search_web` qua Tavily rồi tổng hợp câu trả lời có nguồn. Cần OpenAI API key, Tavily API key, internet và ngân sách API; Tavily Search tiêu thụ credits. Phiếu là dữ liệu giả lập; câu hỏi và kho tri thức được gửi tới nhà cung cấp model, truy vấn Research còn được gửi tới Tavily.
 
 ## Chạy trên Windows
 
@@ -12,6 +12,8 @@ Mở PowerShell tại thư mục này:
 python -m pip install -r requirements-live.txt
 python -m workshop serve
 ```
+
+PDF quy trình mật khẩu là dữ liệu cục bộ, không được Git theo dõi. Đặt file tại `data/policies/Information_Technology_Procedure_-_Passwords.pdf` trước khi chạy. Khi clone repo, cần tự cung cấp file PDF này. Bộ lập chỉ mục trích xuất văn bản theo trang, chia chunk có overlap và gắn trang vào nguồn trích dẫn. Bản PDF có thể không phải bản hiện hành; hãy xác minh với thư viện chính sách chính thức trước khi áp dụng.
 
 Trước khi chạy, tạo `.env` từ `.env.example` rồi điền `OPENAI_API_KEY`, `WORKSHOP_CHAT_MODEL`, `WORKSHOP_EMBEDDING_MODEL` và `TAVILY_API_KEY`. Không đưa key vào Git hoặc trình chiếu. Ứng dụng luôn chạy AI thật và dừng với thông báo rõ ràng nếu thiếu cấu hình. Bản sao này **không sao chép key** từ Workshop2.
 

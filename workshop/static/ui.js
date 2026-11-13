@@ -10,8 +10,8 @@ function bubble(role, content, source, agent, citations) {
   item.className = `bubble ${role}`;
   const heading = document.createElement("span");
   heading.className = "meta";
-  const labels = { qa: "Q&A Agent", ticket: "Ticket Agent", research: "Research Agent" };
-  heading.textContent = role === "user" ? "Bạn" : (labels[agent] || "Trợ lý");
+  const labels = { qa: "Tra cứu chính sách", ticket: "Hỗ trợ kỹ thuật", research: "Tìm kiếm web" };
+  heading.textContent = role === "user" ? "Bạn" : (labels[agent] || "Trợ lý CNTT");
   item.append(heading, document.createTextNode(content));
   if (source && source.length) {
     const label = document.createElement("span");
@@ -71,7 +71,7 @@ async function decide(id, approve, buttons, card) {
   try {
     const result = await post(`/approvals/${encodeURIComponent(id)}`, { approve });
     if (result.status === "approved") {
-      bubble("assistant", `Đã phê duyệt. Phiếu ${result.ticket_id} được tạo với trạng thái Pending.`);
+      bubble("assistant", "Đã phê duyệt. Phiếu hỗ trợ đã được tạo và đang chờ xử lý.");
     } else {
       bubble("assistant", "Đã từ chối. Không có phiếu nào được tạo.");
     }
@@ -136,5 +136,5 @@ fetch("/health").then(response => {
   if (!response.ok) throw new Error("Health check failed");
   return response.json();
 }).then(() => {
-  status.textContent = "AI thật · local";
+  status.textContent = "Hệ thống sẵn sàng";
 }).catch(() => { status.textContent = "Máy chủ chưa sẵn sàng"; });
