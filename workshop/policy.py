@@ -1,5 +1,7 @@
 """Approval rules; executed by the application, never by the model."""
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 APPROVAL_TTL_SECONDS = 600
 MAX_RECORDS = 1000
@@ -10,6 +12,15 @@ class TicketDraft(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     content: str = Field(min_length=1, max_length=500)
+    title: str | None = Field(default=None, min_length=1, max_length=100)
+    category: Literal["access", "network", "software", "hardware", "other"] = "other"
+    priority: Literal["low", "normal", "high"] = "normal"
+
+    @model_validator(mode="after")
+    def default_title(self):
+        if self.title is None:
+            self.title = self.content[:80]
+        return self
 
 
 class DecisionConflict(Exception):

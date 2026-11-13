@@ -4,5 +4,6 @@ numpy
 openai
 faiss-cpu
 tavily-python
-strands-agents
+strands-agents[otel]
+langfuse
 pypdf

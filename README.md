@@ -2,7 +2,7 @@
 
 **Đại học FPT · AI trong doanh nghiệp: Vượt ra ngoài mô hình**
 
-Ứng dụng chạy **một chế độ AI thật** với **Strands Agents SDK**: một router và ba specialist agents trong Strands Graph. **Q&A** gọi `search_policy` để tra embeddings/FAISS từ các ghi chú mẫu và PDF quy trình mật khẩu; **Ticket** gọi `draft_ticket` nhưng chỉ ghi SQLite sau khi người dùng phê duyệt; **Research** dùng vòng agent–tool của Strands để gọi `search_web` qua Tavily rồi tổng hợp câu trả lời có nguồn. Cần OpenAI API key, Tavily API key, internet và ngân sách API; Tavily Search tiêu thụ credits. Phiếu là dữ liệu giả lập; câu hỏi và kho tri thức được gửi tới nhà cung cấp model, truy vấn Research còn được gửi tới Tavily.
+Ứng dụng chạy **một chế độ AI thật** với **Strands Agents SDK**: một router và ba specialist agents trong Strands Graph. **Q&A** gọi `search_policy` để tra embeddings/FAISS chỉ từ PDF quy trình mật khẩu cục bộ; **Ticket** soạn bản nháp gồm tiêu đề, loại, mức ưu tiên và mô tả, chỉ ghi SQLite sau khi người dùng phê duyệt; **Research** dùng vòng agent–tool của Strands để gọi `search_web` qua Tavily rồi tổng hợp câu trả lời có nguồn. Cần OpenAI API key, Tavily API key, internet và ngân sách API; Tavily Search tiêu thụ credits. Phiếu là dữ liệu local, không gửi vào hệ thống ITSM bên ngoài; câu hỏi và kho tri thức được gửi tới nhà cung cấp model, truy vấn Research còn được gửi tới Tavily.
 
 ## Chạy trên Windows
 
@@ -17,7 +17,7 @@ PDF quy trình mật khẩu là dữ liệu cục bộ, không được Git theo
 
 Trước khi chạy, tạo `.env` từ `.env.example` rồi điền `OPENAI_API_KEY`, `WORKSHOP_CHAT_MODEL`, `WORKSHOP_EMBEDDING_MODEL` và `TAVILY_API_KEY`. Không đưa key vào Git hoặc trình chiếu. Ứng dụng luôn chạy AI thật và dừng với thông báo rõ ràng nếu thiếu cấu hình. Bản sao này **không sao chép key** từ Workshop2.
 
-Timeout mặc định **120 giây cho mỗi node Strands**; có thể đặt `WORKSHOP_RESEARCH_TIMEOUT_SECONDS` từ 10 đến 300 rồi khởi động lại server. Tavily SDK giới hạn riêng lượt tìm kiếm ở 120 giây.
+Timeout mặc định **120 giây cho mỗi node Strands**; có thể đặt `WORKSHOP_RESEARCH_TIMEOUT_SECONDS` từ 10 đến 300 rồi khởi động lại server. Lập chỉ mục PDF dùng timeout embedding riêng mặc định **60 giây**, cấu hình bằng `WORKSHOP_EMBEDDING_TIMEOUT_SECONDS` từ 10 đến 180. Tavily SDK giới hạn riêng lượt tìm kiếm ở 120 giây.
 
 Mở terminal thứ hai, cũng tại thư mục này:
 
@@ -25,7 +25,11 @@ Mở terminal thứ hai, cũng tại thư mục này:
 python -m workshop demo
 ```
 
-Hoặc mở **[giao diện chat](http://127.0.0.1:8000/)** trên trình duyệt. Chọn câu hỏi mẫu để xem nguồn tri thức, sau đó thử đề xuất tạo phiếu và nhấn **Phê duyệt** hoặc **Từ chối**. Trang chat chỉ phục vụ chế độ local không có token; khi bật `WORKSHOP_HOSTED=1` hoặc đặt `WORKSHOP_TOKEN`, giao diện không được mở để tránh dùng token người trình bày trong trình duyệt.
+Hoặc mở **[giao diện chat](http://127.0.0.1:8000/)** trên trình duyệt. Chọn câu hỏi mẫu để xem nguồn tri thức, sau đó thử đề xuất tạo phiếu và nhấn **Phê duyệt** hoặc **Từ chối**. Phiếu được duyệt có mã `IT-xxxxx`, chi tiết, trạng thái và xuất hiện trong danh sách phiếu gần đây; tối đa 20 phiếu được trả về từ API. Trang chat chỉ phục vụ chế độ local không có token; khi bật `WORKSHOP_HOSTED=1` hoặc đặt `WORKSHOP_TOKEN`, giao diện không được mở để tránh dùng token người trình bày trong trình duyệt.
+
+Muốn thông báo phiếu lên Slack, tạo Incoming Webhook cho channel nhận thông báo, điền URL vào `SLACK_WEBHOOK_URL` trong `.env`, rồi khởi động lại server. Chỉ **phiếu vừa được phê duyệt** mới gửi thông báo; từ chối hoặc phê duyệt lại không gửi thêm. Nếu Slack lỗi, phiếu vẫn được lưu và server ghi sự kiện `ticket_notification_failed`; bản demo không tự gửi lại. Không commit hoặc chia sẻ webhook URL.
+
+Muốn xem trace trên Langfuse, điền `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` và (nếu cần) `LANGFUSE_BASE_URL` theo vùng của dự án vào `.env`, cài lại `requirements-live.txt` rồi khởi động lại server. Khi thiếu cả hai key, tracing tắt; thiếu một key sẽ báo lỗi cấu hình. Mỗi lượt `/chat` tạo một trace cha `workshop.chat` chứa các span Strands router/specialist/model/tool. Trace có thể chứa câu hỏi, câu trả lời và nội dung tool/chính sách; chỉ dùng dữ liệu demo không nhạy cảm. Không đưa key vào Git.
 
 Để xuất **sơ đồ kiến trúc** (không gọi OpenAI/Tavily API), chạy `python -m workshop graph`. Lệnh tạo `graph_visualization.png` tại thư mục dự án; bộ dựng ảnh Mermaid có thể cần internet. Sơ đồ mô tả Strands Graph router → specialist và vòng gọi tool bên trong mỗi agent; đây là **sơ đồ kiến trúc**, không phải ảnh tự sinh từ runtime Strands. Approval ticket vẫn do FastAPI xử lý sau khi agent kết thúc.
 

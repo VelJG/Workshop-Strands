@@ -1,12 +1,26 @@
-"""Request correlation and structured logs without prompts or secrets."""
+"""Request logs without prompts or secrets; optional Langfuse tracing for chat."""
 import json
 import logging
+import os
 from time import perf_counter
 from uuid import uuid4
 
 from starlette.responses import JSONResponse
 
 logger = logging.getLogger("workshop")
+
+
+def init_langfuse():
+    """Enable Strands OpenTelemetry export only when both project keys are set."""
+    public_key = os.getenv("LANGFUSE_PUBLIC_KEY", "").strip()
+    secret_key = os.getenv("LANGFUSE_SECRET_KEY", "").strip()
+    if not public_key and not secret_key:
+        return None
+    if not public_key or not secret_key:
+        missing = "LANGFUSE_PUBLIC_KEY" if not public_key else "LANGFUSE_SECRET_KEY"
+        raise ValueError(f"Langfuse tracing requires {missing}.")
+    from langfuse import get_client
+    return get_client()
 
 
 def event(name, **fields):

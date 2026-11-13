@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from workshop.__main__ import load_live_settings, load_local_env, research_timeout_seconds, http_timeout_seconds
+from workshop.__main__ import load_live_settings, load_local_env, research_timeout_seconds, embedding_timeout_seconds, http_timeout_seconds
 
 
 class ConfigTest(unittest.TestCase):
@@ -20,6 +20,13 @@ class ConfigTest(unittest.TestCase):
         for value in ("0", "301", "invalid"):
             with self.subTest(value=value), self.assertRaisesRegex(ValueError, "WORKSHOP_RESEARCH_TIMEOUT_SECONDS"):
                 research_timeout_seconds({"WORKSHOP_RESEARCH_TIMEOUT_SECONDS": value})
+
+    def test_embedding_timeout_is_configurable_and_bounded(self):
+        self.assertEqual(embedding_timeout_seconds({}), 60)
+        self.assertEqual(embedding_timeout_seconds({"WORKSHOP_EMBEDDING_TIMEOUT_SECONDS": "90"}), 90)
+        for value in ("0", "181", "invalid"):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "WORKSHOP_EMBEDDING_TIMEOUT_SECONDS"):
+                embedding_timeout_seconds({"WORKSHOP_EMBEDDING_TIMEOUT_SECONDS": value})
 
     def test_live_configuration_requires_key_and_both_model_names(self):
         with self.assertRaisesRegex(ValueError, "OPENAI_API_KEY.*WORKSHOP_CHAT_MODEL.*WORKSHOP_EMBEDDING_MODEL.*TAVILY_API_KEY"):

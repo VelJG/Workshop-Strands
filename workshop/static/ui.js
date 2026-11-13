@@ -2,8 +2,46 @@ const form = document.querySelector("#chat-form");
 const input = document.querySelector("#message");
 const send = document.querySelector("#send");
 const messages = document.querySelector("#messages");
-const status = document.querySelector("#service-status");
+const recentTickets = document.querySelector("#recent-tickets");
 let busy = false;
+const categories = { access: "Tài khoản", network: "Mạng/VPN", software: "Phần mềm", hardware: "Thiết bị", other: "Khác" };
+const priorities = { low: "Thấp", normal: "Bình thường", high: "Cao" };
+
+function ticketDetails(ticket) {
+  const created = Number(ticket.created_at);
+  const date = Number.isFinite(created) && created > 0
+    ? `\nTạo lúc: ${new Date(created * 1000).toLocaleString("vi-VN")}` : "";
+  return `Mã phiếu: ${ticket.ticket_ref}\nTiêu đề: ${ticket.title}\nLoại: ${categories[ticket.category] || categories.other}\nƯu tiên: ${priorities[ticket.priority] || priorities.normal}\nMô tả: ${ticket.content}\nTrạng thái: Chờ xử lý${date}`;
+}
+
+async function refreshTickets() {
+  try {
+    const response = await fetch("/tickets");
+    if (!response.ok) throw new Error("Ticket list unavailable");
+    const tickets = await response.json();
+    if (!Array.isArray(tickets)) throw new Error("Invalid ticket list");
+    recentTickets.replaceChildren();
+    if (!tickets.length) {
+      const empty = document.createElement("span");
+      empty.className = "ticket-empty";
+      empty.textContent = "Chưa có phiếu nào.";
+      recentTickets.append(empty);
+      return;
+    }
+    tickets.slice(0, 10).forEach(ticket => {
+      const item = document.createElement("details");
+      item.className = "ticket-item";
+      const title = document.createElement("summary");
+      title.textContent = `${ticket.ticket_ref} · ${ticket.title}`;
+      const detail = document.createElement("span");
+      detail.textContent = ticketDetails(ticket);
+      item.append(title, detail);
+      recentTickets.append(item);
+    });
+  } catch {
+    recentTickets.textContent = "Chưa thể tải danh sách phiếu.";
+  }
+}
 
 function bubble(role, content, source, agent, citations) {
   const item = document.createElement("div");
@@ -11,7 +49,7 @@ function bubble(role, content, source, agent, citations) {
   const heading = document.createElement("span");
   heading.className = "meta";
   const labels = { qa: "Tra cứu chính sách", ticket: "Hỗ trợ kỹ thuật", research: "Tìm kiếm web" };
-  heading.textContent = role === "user" ? "Bạn" : (labels[agent] || "Trợ lý CNTT");
+  heading.textContent = role === "user" ? "Bạn" : (labels[agent] || "Trợ lý IT");
   item.append(heading, document.createTextNode(content));
   if (source && source.length) {
     const label = document.createElement("span");
@@ -71,7 +109,8 @@ async function decide(id, approve, buttons, card) {
   try {
     const result = await post(`/approvals/${encodeURIComponent(id)}`, { approve });
     if (result.status === "approved") {
-      bubble("assistant", "Đã phê duyệt. Phiếu hỗ trợ đã được tạo và đang chờ xử lý.");
+      bubble("assistant", `Đã phê duyệt. Phiếu hỗ trợ đã được tạo.\n${ticketDetails(result)}`);
+      refreshTickets();
     } else {
       bubble("assistant", "Đã từ chối. Không có phiếu nào được tạo.");
     }
@@ -83,7 +122,8 @@ async function decide(id, approve, buttons, card) {
 }
 
 function approvalCard(result) {
-  const card = bubble("assistant", `Đề xuất tạo phiếu: ${result.draft.content}\nChưa có phiếu nào được tạo. Bạn có phê duyệt không?`, null, "ticket");
+  const draft = result.draft;
+  const card = bubble("assistant", `Đề xuất yêu cầu hỗ trợ\nTiêu đề: ${draft.title}\nLoại: ${categories[draft.category] || categories.other}\nƯu tiên: ${priorities[draft.priority] || priorities.normal}\nMô tả: ${draft.content}\n\nChưa có phiếu nào được tạo. Bạn có phê duyệt không?`, null, "ticket");
   const actions = document.createElement("div");
   actions.className = "actions";
   const approve = document.createElement("button");
@@ -132,9 +172,4 @@ input.addEventListener("keydown", event => {
 document.querySelectorAll(".example").forEach(button => {
   button.addEventListener("click", () => sendMessage(button.dataset.message));
 });
-fetch("/health").then(response => {
-  if (!response.ok) throw new Error("Health check failed");
-  return response.json();
-}).then(() => {
-  status.textContent = "Hệ thống sẵn sàng";
-}).catch(() => { status.textContent = "Máy chủ chưa sẵn sàng"; });
+refreshTickets();

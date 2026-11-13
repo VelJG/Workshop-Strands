@@ -1,5 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 import tempfile
+import sqlite3
+from time import time
 from unittest.mock import patch
 import unittest
 from pathlib import Path
@@ -15,12 +18,14 @@ def fake_agents_factory():
     def run(message):
         normalized = message.lower()
         if "tạo phiếu" in normalized or "create ticket" in normalized:
-            return {"agent": "ticket", "draft": TicketDraft(content="Lỗi đăng nhập VPN")}
+            return {"agent": "ticket", "draft": TicketDraft(content="Không đăng nhập được VPN từ xa",
+                                                             title="Lỗi đăng nhập VPN", category="network",
+                                                             priority="normal")}
         if "web" in normalized:
             return {"agent": "research", "answer": "Kết quả web", "sources": [],
                     "citations": [{"title": "Nguồn mẫu", "url": "https://example.com"}]}
-        return {"agent": "qa", "answer": "Phiếu hỗ trợ mới có trạng thái Pending." if "phiếu" in normalized else "Chưa rõ.",
-                "sources": ["ticket-policy"] if "phiếu" in normalized else []}
+        return {"agent": "qa", "answer": "Quy trình quy định cách quản lý mật khẩu và PIN." if "mật khẩu" in normalized else "Chưa rõ.",
+                "sources": ["Information Technology Procedure - Passwords, page 1"] if "mật khẩu" in normalized else []}
 
     return SimpleNamespace(run=run)
 
@@ -55,9 +60,9 @@ class WorkshopTest(unittest.TestCase):
     def test_grounded_answer_and_health(self):
         with self.client() as client:
             self.assertEqual(client.get("/health").json(), {"status": "ok"})
-            reply = client.post("/chat", json={"message": "Phiếu hỗ trợ mới có trạng thái gì?"})
-            self.assertIn("Pending", reply.json()["answer"])
-            self.assertIn("ticket-policy", reply.json()["sources"])
+            reply = client.post("/chat", json={"message": "Theo quy trình mật khẩu, mục đích của quy trình này là gì?"})
+            self.assertIn("mật khẩu", reply.json()["answer"])
+            self.assertIn("Information Technology Procedure - Passwords, page 1", reply.json()["sources"])
             self.assertTrue(reply.headers["X-Request-ID"])
             unknown = client.post("/chat", json={"message": "Who won Wimbledon?"})
             self.assertEqual(unknown.json()["sources"], [])
@@ -73,14 +78,15 @@ class WorkshopTest(unittest.TestCase):
             page = client.get("/")
             self.assertEqual(page.status_code, 200)
             self.assertIn("text/html", page.headers["content-type"])
-            self.assertIn("Trợ lý CNTT nội bộ", page.text)
+            self.assertIn("Trợ lý IT", page.text)
             self.assertIn('src="/ui.js"', page.text)
             script = client.get("/ui.js")
             self.assertEqual(script.status_code, 200)
             source = script.content.decode("utf-8")
             self.assertIn('post("/chat"', source)
             self.assertIn('/approvals/', source)
-            self.assertIn("Hệ thống sẵn sàng", source)
+            self.assertNotIn("service-status", source)
+            self.assertNotIn('fetch("/health")', source)
             self.assertNotIn("Chế độ diễn tập", source)
 
     def test_hosted_mode_does_not_expose_local_chat_page(self):
@@ -93,14 +99,59 @@ class WorkshopTest(unittest.TestCase):
     def test_only_approval_creates_a_ticket_and_replay_returns_same_ticket(self):
         with self.client() as client:
             approval = self.propose(client)
+            self.assertEqual(client.get("/tickets").json(), [])
             self.assertEqual(client.get(f"/tickets/{approval}").status_code, 404)
         with self.client() as client:
             first = client.post(f"/approvals/{approval}", json={"approve": True})
             self.assertEqual(first.status_code, 200, first.text)
+            self.assertEqual(first.json()["status"], "approved")
             second = client.post(f"/approvals/{approval}", json={"approve": True})
             self.assertEqual(first.json(), second.json())
+            self.assertEqual(first.json()["ticket_ref"], "IT-00001")
             ticket = client.get(f"/tickets/{first.json()['ticket_id']}")
             self.assertEqual(ticket.json()["status"], "Pending")
+            self.assertEqual(ticket.json()["title"], "Lỗi đăng nhập VPN")
+            self.assertEqual(ticket.json()["category"], "network")
+            self.assertEqual(ticket.json()["priority"], "normal")
+            self.assertEqual(client.get("/tickets").json()[0]["ticket_ref"], "IT-00001")
+
+    def test_new_approval_notifies_once_but_replay_and_denial_do_not(self):
+        notifications = []
+        with self.client(ticket_notifier=notifications.append) as client:
+            approved_id = self.propose(client)
+            denied_id = self.propose(client)
+            client.post(f"/approvals/{denied_id}", json={"approve": False})
+            first = client.post(f"/approvals/{approved_id}", json={"approve": True})
+            replay = client.post(f"/approvals/{approved_id}", json={"approve": True})
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(replay.json(), first.json())
+        self.assertEqual(notifications, [first.json()])
+
+    def test_slack_failure_does_not_undo_approved_ticket(self):
+        def unavailable(_ticket):
+            raise RuntimeError("Slack unavailable")
+
+        with self.client(ticket_notifier=unavailable) as client:
+            approval_id = self.propose(client)
+            response = client.post(f"/approvals/{approval_id}", json={"approve": True})
+            saved = client.get(f"/tickets/{approval_id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(saved.status_code, 200)
+
+    def test_existing_ticket_database_gains_new_fields_without_losing_records(self):
+        ticket_id = "11111111-1111-4111-8111-111111111111"
+        with closing(sqlite3.connect(self.db)) as db, db:
+            db.execute("""CREATE TABLE actions (
+                id TEXT PRIMARY KEY, content TEXT NOT NULL,
+                status TEXT NOT NULL, expires_at REAL NOT NULL)""")
+            db.execute("INSERT INTO actions VALUES (?, ?, 'approved', ?)",
+                       (ticket_id, "Lỗi truy cập VPN", time() + 600))
+        with self.client() as client:
+            ticket = client.get(f"/tickets/{ticket_id}").json()
+            self.assertEqual(ticket["ticket_ref"], "IT-00001")
+            self.assertEqual(ticket["title"], "Lỗi truy cập VPN")
+            self.assertEqual(ticket["category"], "other")
+            self.assertEqual(len(client.get("/tickets").json()), 1)
 
     def test_concurrent_approval_replays_same_ticket(self):
         with self.client() as client:

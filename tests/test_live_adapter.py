@@ -29,12 +29,24 @@ class LiveAdapterTest(unittest.TestCase):
         embedding_type.return_value.embed_documents.side_effect = self._embed_documents
         agents = live_agents(chat_model="test-chat", embedding_model="test-embed", api_key="test-key",
                              tavily_key="test-tavily-key")
+        self.assertGreaterEqual(embedding_type.call_args.kwargs["request_timeout"], 45)
+        self.assertEqual(embedding_type.call_args.kwargs["max_retries"], 1)
         graph = agents.build_graph()
         self.assertEqual(set(graph.nodes), {"router", "qa", "ticket", "research"})
         self.assertEqual(len(graph.edges), 3)
         self.assertEqual(graph.nodes["router"].executor.__class__.__name__, "Agent")
         embedded = embedding_type.return_value.embed_documents.call_args.args[0]
         self.assertIn("Password rules from PDF", embedded)
+        self.assertEqual(embedded, ["Password rules from PDF"])
+
+    @patch("langchain_openai.OpenAIEmbeddings")
+    def test_indexing_error_reports_safe_exception_type(self, embedding_type):
+        from openai import OpenAIError
+        embedding_type.return_value.embed_documents.side_effect = OpenAIError("private details")
+        with self.assertRaisesRegex(RuntimeError, "OpenAIError") as caught:
+            live_agents(chat_model="test-chat", embedding_model="test-embed", api_key="test-key",
+                        tavily_key="test-tavily-key")
+        self.assertNotIn("private details", str(caught.exception))
 
     def test_tavily_results_are_bounded_and_only_https(self):
         hits = _tavily_hits({"results": [

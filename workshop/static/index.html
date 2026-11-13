@@ -10,26 +10,24 @@
     :root { color-scheme: dark; font-family: "Segoe UI", Inter, system-ui, sans-serif; color: #edf2fb; background: #05071d; }
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 88% 4%, rgba(83, 10, 147, .46), transparent 42%), radial-gradient(ellipse at 85% 92%, rgba(20, 39, 177, .42), transparent 44%), linear-gradient(125deg, #05071d 5%, #080b2a 58%, #10104a 100%); background-attachment: fixed; }
-    button, textarea { font: inherit; }
+    button, textarea, summary { font: inherit; }
     button { cursor: pointer; }
     button:disabled { cursor: not-allowed; opacity: .55; }
-    button:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid #a78bfa; outline-offset: 2px; }
+    button:focus-visible, textarea:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid #a78bfa; outline-offset: 2px; }
     .shell { max-width: 1180px; margin: 0 auto; padding: 0 28px 48px; }
     .topbar { display: flex; justify-content: space-between; align-items: center; gap: 18px; min-height: 82px; border-bottom: 1px solid rgba(180, 196, 224, .16); }
     .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
     .brand-mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 11px; background: linear-gradient(145deg, #7056c8, #2f4fa3); color: #fff; font-size: .88rem; font-weight: 800; box-shadow: 0 6px 20px rgba(82, 67, 170, .28); }
     .brand-name { display: block; font-weight: 750; letter-spacing: -.025em; }
     .brand-type { display: block; margin-top: 2px; color: #9aa9c5; font-size: .74rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
-    .badge { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; border: 1px solid rgba(184, 199, 225, .2); background: rgba(26, 43, 68, .88); color: #dce8f9; padding: 8px 11px; border-radius: 999px; font-size: .78rem; font-weight: 700; }
-    .badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #57d6a0; box-shadow: 0 0 10px rgba(87, 214, 160, .55); }
     .heading { padding: 36px 0 26px; }
     .eyebrow { color: #b49aff; font-size: .74rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
     h1 { font-size: clamp(1.7rem, 3.5vw, 2.45rem); margin: 7px 0 8px; letter-spacing: -.045em; line-height: 1.2; }
     .intro { margin: 0; color: #b2bfd4; max-width: 68ch; line-height: 1.55; }
-    .grid { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 18px; align-items: start; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; align-items: start; }
     .panel { min-width: 0; border: 1px solid rgba(178, 196, 225, .16); border-radius: 14px; background: rgba(31, 52, 77, .94); box-shadow: 0 18px 50px rgba(0, 0, 0, .24); }
     .panel-heading { padding: 18px 22px; border-bottom: 1px solid rgba(178, 196, 225, .14); }
-    .panel-heading h2, .services h2 { margin: 0; font-size: .95rem; letter-spacing: -.015em; }
+    .panel-heading h2 { margin: 0; font-size: .95rem; letter-spacing: -.015em; }
     .panel-heading p { margin: 4px 0 0; color: #aab9ce; font-size: .78rem; }
     .conversation { min-height: 410px; max-height: 58vh; overflow: auto; padding: 22px; display: flex; flex-direction: column; gap: 15px; background: rgba(12, 24, 43, .2); }
     .bubble { max-width: 88%; padding: 12px 15px; border-radius: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -49,14 +47,27 @@
     textarea::placeholder { color: #a2b1c6; }
     .send { min-height: 44px; }
     .hint { color: #a4b3c8; font-size: .75rem; margin: 9px 0 0; }
-    .services { padding: 20px; }
-    .services h2 { margin-bottom: 15px; }
+    .services { padding: 16px; }
+    .sidebar-section { overflow: hidden; border: 1px solid rgba(183, 202, 228, .22); border-radius: 10px; background: #263c57; }
+    .sidebar-section + .sidebar-section { margin-top: 11px; }
+    .sidebar-section > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; list-style: none; cursor: pointer; padding: 14px; color: #edf3fc; font-size: .9rem; font-weight: 750; }
+    .sidebar-section > summary::-webkit-details-marker { display: none; }
+    .sidebar-section > summary::after { content: "▾"; color: #c0b4ff; transition: transform .18s ease; }
+    .sidebar-section[open] > summary::after { transform: rotate(180deg); }
+    .sidebar-section > summary:hover { background: #304967; }
+    .sidebar-content { padding: 0 10px 10px; }
     .example { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; border: 1px solid rgba(183, 202, 228, .22); background: #293f5c; color: #edf3fc; border-radius: 9px; padding: 13px 12px; margin-bottom: 9px; font-size: .83rem; font-weight: 650; line-height: 1.35; }
     .example:hover:not(:disabled) { background: #344e70; border-color: #8a7bd2; }
     .example::after { content: "↗"; color: #c0b4ff; font-size: .95rem; }
+    .example:last-child { margin-bottom: 0; }
     .notice { border-top: 1px solid rgba(178, 196, 225, .14); margin: 15px 0 0; padding-top: 14px; font-size: .75rem; color: #a9b8cc; line-height: 1.5; }
-    @media (max-width: 760px) { .shell { padding: 0 14px 28px; } .topbar { min-height: 70px; } .brand-mark { width: 36px; height: 36px; } .heading { padding: 27px 0 20px; } .grid { grid-template-columns: 1fr; } .services { order: -1; } .conversation { min-height: 320px; max-height: 54vh; padding: 15px; } .panel-heading, form { padding-left: 15px; padding-right: 15px; } .bubble { max-width: 96%; } }
-    @media (max-width: 480px) { .badge { font-size: 0; padding: 9px; } .badge::before { width: 9px; height: 9px; } .services { padding: 15px; } .services h2 { margin-bottom: 10px; } .example { margin-bottom: 7px; } .composer { flex-direction: column; align-items: stretch; } .send { align-self: flex-end; } }
+    .ticket-item { padding: 10px 0; border-top: 1px solid rgba(178, 196, 225, .1); font-size: .8rem; line-height: 1.4; }
+    .ticket-item summary { color: #eaf1fb; cursor: pointer; font-weight: 700; }
+    .ticket-item span { display: block; margin-top: 7px; white-space: pre-wrap; }
+    .ticket-item span, .ticket-empty { color: #aab9ce; font-size: .75rem; }
+    #recent-tickets { max-height: 300px; overflow: auto; }
+    @media (max-width: 760px) { .shell { padding: 0 14px 28px; } .topbar { min-height: 70px; } .brand-mark { width: 36px; height: 36px; } .heading { padding: 27px 0 20px; } .grid { grid-template-columns: 1fr; } .conversation { min-height: 320px; max-height: 54vh; padding: 15px; } .panel-heading, form { padding-left: 15px; padding-right: 15px; } .bubble { max-width: 96%; } }
+    @media (max-width: 480px) { .services { padding: 12px; } .example { margin-bottom: 7px; } .composer { flex-direction: column; align-items: stretch; } .send { align-self: flex-end; } }
   </style>
   <script src="/ui.js" defer></script>
 </head>
@@ -67,18 +78,17 @@
         <span class="brand-mark" aria-hidden="true">IT</span>
         <div><span class="brand-name">Cổng hỗ trợ CNTT</span><span class="brand-type">Dịch vụ nội bộ</span></div>
       </div>
-      <span id="service-status" class="badge" role="status" aria-label="Trạng thái hệ thống">Đang kiểm tra…</span>
     </header>
     <div class="heading">
       <div class="eyebrow">Trung tâm hỗ trợ</div>
-      <h1>Trợ lý CNTT nội bộ</h1>
+      <h1>Trợ lý IT</h1>
       <p class="intro">Tra cứu chính sách, gửi yêu cầu hỗ trợ và tìm thông tin liên quan trong một cuộc trò chuyện.</p>
     </div>
     <div class="grid">
       <section class="panel" aria-label="Hội thoại hỗ trợ">
         <div class="panel-heading"><h2>Hội thoại</h2><p>Đặt câu hỏi hoặc mô tả vấn đề bạn đang gặp phải.</p></div>
         <div id="messages" class="conversation" role="log" aria-live="polite" aria-relevant="additions text">
-          <div class="bubble assistant"><span class="meta">Trợ lý CNTT</span>Xin chào! Tôi có thể giúp bạn tra cứu thông tin và tiếp nhận yêu cầu hỗ trợ.</div>
+          <div class="bubble assistant"><span class="meta">Trợ lý IT</span>Xin chào! Tôi có thể giúp bạn tra cứu thông tin và tiếp nhận yêu cầu hỗ trợ.</div>
         </div>
         <form id="chat-form">
           <label for="message">Nội dung trao đổi</label>
@@ -90,10 +100,18 @@
         </form>
       </section>
       <aside class="panel services" aria-label="Dịch vụ hỗ trợ">
-        <h2>Dịch vụ hỗ trợ</h2>
-        <button class="example" type="button" data-message="Phiếu hỗ trợ mới có trạng thái gì?">Tra cứu chính sách</button>
-        <button class="example" type="button" data-message="Tạo phiếu hỗ trợ cho lỗi đăng nhập VPN">Tạo yêu cầu hỗ trợ</button>
-        <button class="example" type="button" data-message="Tìm trên web hướng dẫn bảo mật VPN mới nhất và dẫn nguồn">Tìm kiếm web</button>
+        <details class="sidebar-section shortcuts">
+          <summary>Dịch vụ hỗ trợ</summary>
+          <div class="sidebar-content">
+            <button class="example" type="button" data-message="Theo quy trình mật khẩu, mục đích của quy trình này là gì?">Tra cứu chính sách</button>
+            <button class="example" type="button" data-message="Tạo phiếu hỗ trợ cho lỗi đăng nhập VPN">Tạo yêu cầu hỗ trợ</button>
+            <button class="example" type="button" data-message="Tìm trên web hướng dẫn bảo mật VPN mới nhất và dẫn nguồn">Tìm kiếm web</button>
+          </div>
+        </details>
+        <details class="sidebar-section ticket-list">
+          <summary>Phiếu gần đây</summary>
+          <div class="sidebar-content"><div id="recent-tickets" aria-live="polite"><span class="ticket-empty">Chưa có phiếu nào.</span></div></div>
+        </details>
         <p class="notice">Thông tin do AI tổng hợp có thể cần được kiểm tra trước khi sử dụng.</p>
       </aside>
     </div>

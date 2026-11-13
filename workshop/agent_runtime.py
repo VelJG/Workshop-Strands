@@ -1,5 +1,5 @@
 """FastAPI transport for the bounded Strands multi-agent workflow."""
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, nullcontext
 from pathlib import Path
 import sqlite3
 from uuid import UUID
@@ -54,7 +54,8 @@ def save_graph_visualization(output: Path) -> Path:
     return output
 
 
-def create_app(db: Path, *, agents_factory, token=None, hosted=False):
+def create_app(db: Path, *, agents_factory, token=None, hosted=False, ticket_notifier=None,
+               trace_client=None):
     gate = presenter_gate(token, hosted)
     store = Store(db)
 
@@ -62,7 +63,11 @@ def create_app(db: Path, *, agents_factory, token=None, hosted=False):
     async def lifespan(app):
         store.initialize()
         app.state.agents = agents_factory()
-        yield
+        try:
+            yield
+        finally:
+            if trace_client is not None:
+                trace_client.flush()
 
     app = FastAPI(title="Mini Enterprise AI Support Agent", lifespan=lifespan,
                   docs_url=None if hosted else "/docs",
@@ -89,13 +94,18 @@ def create_app(db: Path, *, agents_factory, token=None, hosted=False):
     @app.post("/chat", dependencies=[Depends(gate)])
     def chat(body: Chat, request: Request):
         try:
-            result = request.app.state.agents.run(body.message)
+            trace = (trace_client.start_as_current_observation(
+                name="workshop.chat", metadata={"request_id": request.state.request_id})
+                if trace_client is not None else nullcontext())
+            with trace:
+                result = request.app.state.agents.run(body.message)
             if "draft" not in result:
                 return {"kind": "answer", "agent": result["agent"],
                         "answer": result["answer"], "sources": result.get("sources", []),
                         "citations": result.get("citations", [])}
             draft = result["draft"]
-            approval = store.propose(draft.content)
+            approval = store.propose(draft.content, title=draft.title,
+                                     category=draft.category, priority=draft.priority)
         except ProviderUnavailable:
             event("provider_unavailable", request_id=request.state.request_id)
             raise HTTPException(503, "AI or search provider unavailable. Check server logs and retry.") from None
@@ -110,13 +120,21 @@ def create_app(db: Path, *, agents_factory, token=None, hosted=False):
     @app.post("/approvals/{approval_id}", dependencies=[Depends(gate)])
     def approval(approval_id: UUID, body: Decision, request: Request):
         try:
-            result = store.decide(str(approval_id), body.approve)
+            result, newly_approved = store.decide(str(approval_id), body.approve)
         except DecisionConflict as exc:
             raise HTTPException(409, str(exc)) from None
         except sqlite3.OperationalError:
             raise HTTPException(503, "Ticket store unavailable.") from None
         if result is None:
             raise HTTPException(404, "Approval not found.")
+        if newly_approved and ticket_notifier is not None:
+            try:
+                ticket_notifier(result)
+                event("ticket_notification_sent", request_id=request.state.request_id,
+                      ticket_ref=result["ticket_ref"])
+            except Exception:
+                event("ticket_notification_failed", request_id=request.state.request_id,
+                      ticket_ref=result["ticket_ref"])
         event("approval_decided", request_id=request.state.request_id,
               approval_id=str(approval_id), decision=result["status"])
         return result
@@ -130,5 +148,12 @@ def create_app(db: Path, *, agents_factory, token=None, hosted=False):
         if result is None:
             raise HTTPException(404, "Ticket not found.")
         return result
+
+    @app.get("/tickets", dependencies=[Depends(gate)])
+    def tickets():
+        try:
+            return store.list_tickets()
+        except sqlite3.OperationalError:
+            raise HTTPException(503, "Ticket store unavailable.") from None
 
     return app
