@@ -52,13 +52,15 @@ Compose chỉ mở cổng trên máy local và giữ volume dữ liệu sau khi 
 
 ## Cấu hình và vận hành AI thật
 
-Chọn model ID được tài khoản cho phép; chat model cần hỗ trợ gọi công cụ và structured output. Không đưa `.env` lên Git hoặc chia sẻ key. Biến môi trường đặt trực tiếp trong tiến trình được ưu tiên hơn `.env`. FAISS lập chỉ mục một lần lúc khởi động; Q&A tool embed câu truy vấn và lấy tối đa hai kết quả. Chỉ mục nằm trong RAM và được tạo lại khi khởi động. Mỗi request tạo Strands Graph và các agent mới để không trộn hội thoại; model provider và index được tái sử dụng. Lỗi provider hiển thị rõ; ứng dụng không fallback sang phản hồi giả lập.
+Chọn model ID được tài khoản cho phép; chat model cần hỗ trợ gọi công cụ và structured output. Không đưa `.env` lên Git hoặc chia sẻ key. Biến môi trường đặt trực tiếp trong tiến trình được ưu tiên hơn `.env`. FAISS lập chỉ mục một lần lúc khởi động; Q&A tool embed câu truy vấn và lấy tối đa ba kết quả. Chỉ mục nằm trong RAM và được tạo lại khi khởi động. Mỗi request tạo Strands Graph và các agent mới để không trộn hội thoại; model provider và index được tái sử dụng. Lỗi provider hiển thị rõ; ứng dụng không fallback sang phản hồi giả lập.
 
 Docker image luôn có thư viện AI thật; Compose đọc `.env` lúc chạy, không đóng gói key vào image.
 
-## Tài liệu trình bày
+## Tài liệu và sơ đồ
 
-- [Kịch bản trình bày 30 phút](docs/presenter.md): sơ đồ, bốn trụ cột và thứ tự đối chiếu AgentCore.
-- [Hướng dẫn AWS](docs/aws.md): phương án triển khai tùy chọn; dự án không tự tạo tài nguyên AWS.
+- [Luồng hệ thống Mermaid](docs/system-flow.mmd).
+- [Kiến trúc AWS](docs/aws.md): phương án triển khai tùy chọn; dự án không tự tạo tài nguyên AWS.
+- `graph_visualization.png`: sơ đồ Strands Graph và các specialist.
+- `Workshop_Enterprise_AI_AWS_Architecture_V3.drawio.png`: sơ đồ kiến trúc AWS.
 - `tests/test_workshop.py`: kiểm thử tình huống có kết quả xác định. Cài `requirements-test.txt`, sau đó chạy `python -m unittest discover -s tests -v` từ thư mục dự án.
 

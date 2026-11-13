@@ -1,0 +1,14 @@
+flowchart LR
+    U[Người dùng · Chat UI hoặc CLI] --> I[Identity · token tùy chọn]
+    I --> R[FastAPI + Strands Graph Router]
+    R --> Q[Q&A Agent · RAG]
+    R --> P[Ticket Agent · chỉ đề xuất]
+    R --> W[Research Agent · ReAct + Tavily Search]
+    Q --> K[(Kho policy · FAISS)]
+    U -->|Quyết định phê duyệt| I
+    I --> G[Approval gate]
+    P --> G
+    G --> S[(SQLite)]
+    W --> C[Web citations]
+    R -.-> O[Structured logs]
+    G -.-> O
