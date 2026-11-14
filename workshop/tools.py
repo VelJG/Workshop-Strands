@@ -1,5 +1,6 @@
 """Strands specialists and bounded, allowlisted IT support tools."""
 from pathlib import Path
+import re
 from typing import Literal
 from urllib.parse import urlsplit
 
@@ -74,6 +75,20 @@ class ProviderUnavailable(Exception):
 
 class RouteDecision(BaseModel):
     route: Literal["qa", "ticket", "research"]
+
+
+_TROUBLESHOOT = re.compile(r"\btroubleshoot(?:ing)?\b", re.IGNORECASE)
+_TICKET_REQUEST = re.compile(
+    r"\b(?:tạo|mở|lập)\s+(?:một\s+)?(?:phiếu|yêu cầu hỗ trợ)\b|"
+    r"\b(?:create|open)\s+(?:a\s+)?ticket\b", re.IGNORECASE)
+
+
+def route_for_message(decision: RouteDecision, message: str) -> Literal["qa", "ticket", "research"]:
+    if not _TROUBLESHOOT.search(message):
+        return decision.route
+    if decision.route == "ticket" or _TICKET_REQUEST.search(message):
+        return "ticket"
+    return "research"
 
 
 def _tavily_hits(response):
@@ -191,7 +206,9 @@ class LiveAgents:
         common = {"model": self._model, "callback_handler": None}
         router = Agent(name="router", structured_output_model=RouteDecision,
                        system_prompt=("Classify the user's IT request as qa, ticket, or research. "
-                                      "ticket means an explicit request to open a ticket; research means external web or current information; "
+                                      "ticket means an explicit request to open a ticket and takes priority; "
+                                      "research means external web, current information, or a request containing "
+                                      "troubleshoot or troubleshooting; "
                                       "otherwise qa. Return only the route."), **common)
         qa = Agent(name="qa_agent", tools=[search_policy],
                    system_prompt=("Answer in clear, concise Vietnamese using only the retrieved password procedure PDF. "
@@ -212,7 +229,8 @@ class LiveAgents:
             def condition(state):
                 node = state.results.get("router")
                 decision = getattr(getattr(node, "result", None), "structured_output", None)
-                return isinstance(decision, RouteDecision) and decision.route == name
+                return (isinstance(decision, RouteDecision)
+                        and route_for_message(decision, capture.get("message", "")) == name)
             return condition
 
         builder = GraphBuilder()
@@ -231,7 +249,8 @@ class LiveAgents:
         from strands.types.exceptions import EventLoopException, StructuredOutputException
         from openai import OpenAIError
 
-        capture = {"sources": None, "draft": None, "citations": [], "search_count": 0}
+        capture = {"sources": None, "draft": None, "citations": [], "search_count": 0,
+                   "message": message}
         graph = self.build_graph(capture)
         try:
             result = graph(message)
@@ -242,17 +261,18 @@ class LiveAgents:
         decision = getattr(getattr(router_node, "result", None), "structured_output", None)
         if not isinstance(decision, RouteDecision) or result.status != Status.COMPLETED:
             raise ProviderUnavailable
-        node = result.results.get(decision.route)
+        route = route_for_message(decision, message)
+        node = result.results.get(route)
         if node is None or node.status != Status.COMPLETED or node.result.stop_reason != "end_turn":
             raise ProviderUnavailable
-        if decision.route == "ticket":
+        if route == "ticket":
             if capture["draft"] is None:
                 raise ProviderUnavailable
             return {"agent": "ticket", "draft": capture["draft"]}
         answer = str(node.result).strip()
         if not answer:
             raise ProviderUnavailable
-        if decision.route == "qa":
+        if route == "qa":
             if capture["sources"] is None:
                 raise ProviderUnavailable
             return {"agent": "qa", "answer": answer, "sources": capture["sources"]}
